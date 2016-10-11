@@ -6,27 +6,25 @@
 ##########################################
 
 # Stop OpenERP Server
-/etc/init.d/odoo-server stop
+sudo service odoo-server stop
 
 # Dump DBs
-path=/home/.data/backups
-f9e=/home/.data/filestore/odoo-9.0-enterprise/filestore
-#databases=`docker exec -it -u postgres db psql -l -t | cut -d'|' -f1`
-logfile=/home/.data/logs/backup.log
+path=/home/odoo-9.0/.data/backups
+f9=/home/odoo-9.0/odoo/.local/share/Odoo/filestore/filestore
+logfile=/home/odoo-9.0/.data/logs/backup.log
 
 echo "Backup started"  >> ${logfile}
 echo "Backup started"
-#for i in $databases
-cat /home/.data/db.txt | while read i
+cat /home/odoo-9.0/.data/db.txt | while read i
 do
         if [ "$i" != "template0" ] && [ "$i" != "template1" ] && [ "$i" != "postgres" ] && [ "$i" != "?" ] && [ "$i" != " " ] ; then
             date=`date +"%d%m%Y_%H%M%N"`
-        if [ ! -d ${path}/${i} ]; then
+            if [ ! -d ${path}/${i} ]; then
                 mkdir ${path}/${i}
             fi
             mkdir ${path}/${i}/${date}
-            if [ -d ${f9e}/${i} ]; then
-                cp -r ${f9e}/${i} ${path}/${i}/${date}
+            if [ -d ${f9}/${i} ]; then
+                cp -r ${f9}/${i} ${path}/${i}/${date}
                 echo "filestore of ${i} created on ${date}"
                 echo "filestore of ${i} created on ${date}" >> ${logfile}
             fi
@@ -46,6 +44,6 @@ echo "Backup end"
 echo "Backup end"  >> ${logfile}
 
 # Start OpenERP Server
-/etc/init.d/odoo-server start
+sudo service odoo-server start
 
 exit 0
