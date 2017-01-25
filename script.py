@@ -1,8 +1,11 @@
 import csv
-import oerplib
+import odoorpc
+import logging
+import sys
+import traceback
 
-oerp = oerplib.OERP('199.19.103.74', protocol='xmlrpc', port=8069)
-user = oerp.login('admin', 'admin', 'PruebasAlan')
+odoo = odoorpc.ODOO('localhost', port=32769)
+odoo.login('erp-carbotecnia-info', 'admin', 'carbotecnia')
 
 with open('productos.csv') as csvfile:
     reader = csv.DictReader(csvfile)
@@ -10,24 +13,26 @@ with open('productos.csv') as csvfile:
     for row in reader:
         print count
         count += 1
-        oerp.create(
-            'product.product', {
-                'name': row['name'],
-                'sale_ok': row['sale_ok'],
-                'purchase_ok': row['purchase_ok'],
-                'type': row['type'],
-                'list_price': row['list_price'],
-                'default_code': row['default_code'],
-                'invoice_policy': row['invoice_policy'],
-                'uom_id': row['uom_id'],
-                'uom_po_id': row['uom_po_id'],
-                'purchase_method': row['purchase_method'],
-                'route_ids': row['route_ids'],
-                'categ_id': row['categ_id'],
-                'warranty': row['warranty'],
-                'produce_delay': row['produce_delay'],
-                'sale_delay': row['sale_delay'],
-                'description_sale': row['description_sale'],
-                'description_purchase': row['description_purchase'],
-                'description_picking': row['description_picking'],
-                'standard_price': row['standard_price']})
+
+        try:
+            odoo.execute('mrp.bom', 'create', {
+                    'id': row['id'],
+                    'product_tmpl_id': row['product_tmpl_id'],
+                    'product_qty': row['product_qty'],
+                    'product_uom_id': row['product_uom'],
+                    'code': row['code'],
+                    'type': row['normal'],
+                    'bom_line_ids': [
+                        'product_id': row['bom_line_ids/product_id/id'],
+                        'product_qty': row[' bom_line_ids/product_qty'],
+                        'product_uom': row['bom_line_ids/product_uom'],
+                        'product_efficiency': row['bom_line_ids/product_efficiency']
+                    ],})
+
+        except:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            l = traceback.format_exception(
+                exc_type, exc_value, exc_traceback)
+            print '*' * 20 + str('Se creo mal el producto')
+            logging.debug(l)
+            logging.debug("\n")
