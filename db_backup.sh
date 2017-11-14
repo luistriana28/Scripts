@@ -1,50 +1,31 @@
-#!/bin/bash
-
+#!/bin/sh
 ##########################################
 ## Odoo Backup
 ## Backup databases: BASE_DE_DATOS
 ##########################################
-
-# Stop OpenERP Server
-sudo /etc/init.d/odoo-server stop
-
-# Dump DBs
-path=/home/odoo-9.0/.data/backups
-filestore=/home/odoo-9.0/.local/share/Odoo/filestore/filestore
-logfile=/home/odoo-9.0/.local/log/Odoo/backup.log
+path=/home/backups
 databases=`psql -l -t | cut -d '|' -f1 | sed -e 's/ //g' -e '/^$/d'`
-
-echo "Backup started"  >> ${logfile}
-echo "Backup started"
-for i in ${databases};
+for d in ${database}
 do
-    if [ "$i" != "template0" ] && [ "$i" != "template1" ] && [ "$i" != "postgres" ] && [ "$i" != "?" ] && [ "$i" != " " ] ; then
-        date=`date +"%d%m%Y_%H%M%N"`
-        if [ ! -d ${path}/${i} ]; then
-            mkdir ${path}/${i}
-        fi
-        mkdir ${path}/${i}/${date}
-        if [ -d ${filestore}/${i} ]; then
-            cp -r ${filestore}/${i} ${path}/${i}/${date}
-            echo "Filestore of ${i} Created on ${date}"
-            echo "Filestore of ${i} Created on ${date}" >> ${logfile}
-        fi
-        filename="${path}/${i}/${date}/${i}_${date}.sql"
-        pg_dump -E UTF-8 -p 5432 -F p -b --no-owner > $filename $i
-        echo "Dump of ${i} Created on ${date}"
-        echo "Dump of ${i} Created on ${date}" >> ${logfile}
-        cd ${path}/${i}
-        tar -cf - ${date} | gzip > ./${i}_${date}.tar.gz
-        echo "Backup Compressed ${i}"
-        echo "Backup Compressed ${i}" >> ${logfile}
-        rm -rf ${path}/${i}/${date}
+    echo 'Stop odoo-server' ${d}
+    #sudo service odoo-server stop
+    path=/home/backups/${d}
+    date=`date +"%d_%m_%Y_%H_%M_%S"`
+    if [ ! -d ${path} ]; then
+     echo 'Folder made with' $d
+     mkdir -p $path
     fi
+    if [ "$d" != "template0" ] && [ "$d" != "template1" ] && [ "$d" != "postgres" ]; then
+            echo 'Start Dumping database' $d
+            cd ${path}
+            pg_dump ${d} -E UTF-8 -p 5432 -F p -b --no-owner > ${d}_${date}.sql
+            cp /home/.local/share/Odoo/filestore/filestore/${d} .
+            echo 'DONE DB dumped' $d
+    fi
+    cd /home/backups/
+    tar -cvf - ${d} | gzip -9 > /home/backups/${d}_${date}.tar.gz
+    rm -rf ${d}
+    echo 'Respaldo Finalizado'
+    #sudo service odoo-server start
+    echo 'Start Odoo Server'
 done
-
-echo "Backup end"
-echo "Backup end"  >> ${logfile}
-
-# Start OpenERP Server
-sudo service odoo-server start
-
-exit 0
